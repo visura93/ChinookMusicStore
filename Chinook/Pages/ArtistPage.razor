@@ -82,7 +82,14 @@ else
     private List<Models.Playlist> Playlists;
     private long SelectedExistingPlaylistId { get; set; }
     private string NewPlaylistName { get; set; }
-  
+    @inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+    @code {
+        public async Task ReloadPageAsync()
+        {
+            await JSRuntime.InvokeVoidAsync("location.reload");
+        }
+    }
     protected override async Task OnInitializedAsync()
     {
         await InvokeAsync(StateHasChanged);
@@ -107,7 +114,7 @@ else
     private async void FavoriteTrack(long trackId)
     {
         var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
-        await DataService.SetTrackAsFavorite(trackId);
+    await DataService.SetTrackAsFavorite(trackId, CurrentUserId);
         InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} added to playlist Favorites.";
         refreshPage = true;
         await OnInitializedAsync();
@@ -117,7 +124,7 @@ else
     private async void UnfavoriteTrack(long trackId)
     {
         var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
-        await DataService.SetTrackAsUnfavorite(trackId);
+    await DataService.SetTrackAsUnfavorite(trackId, CurrentUserId);
         InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from playlist Favorites.";
         refreshPage = true;
         await OnInitializedAsync();
@@ -130,9 +137,9 @@ else
         SelectedTrack = Tracks.FirstOrDefault(t => t.TrackId == trackId);
         PlaylistDialog.Open();
     }
-    private async void GetAllPlayLists()
+        private async void GetAllPlayLists()
     {
-        Playlists = await DataService.GetAllPlayLists();
+    Playlists = await DataService.GetAllPlayLists(CurrentUserId);
     }
 
     private async void AddTrackToPlaylist(long trackId, long selectedPlaylistId, string NewPlaylistName)
@@ -140,16 +147,19 @@ else
         CloseInfoMessage();
         if (NewPlaylistName == null)
         {
-            await DataService.AddTrackToPlaylist(trackId, selectedPlaylistId);
+        await DataService.AddTrackToPlaylist(trackId, selectedPlaylistId, CurrentUserId);
         }
         else
         {
-          var id=  await DataService.AddNewPlaylist(NewPlaylistName);
-            await DataService.AddTrackToPlaylist(trackId, id);
+        var id = await DataService.AddNewPlaylist(NewPlaylistName, CurrentUserId);
+        await DataService.AddTrackToPlaylist(trackId, id, CurrentUserId);
         }
         InfoMessage = $"Track {Artist.Name} - {SelectedTrack.AlbumTitle} - {SelectedTrack.TrackName} added to playlist {{playlist name}}.";
         PlaylistDialog.Close();
+
+        await ReloadPageAsync();
     }
+    
 
     private void CloseInfoMessage()
     {
@@ -176,7 +186,7 @@ else
             <label for="ExistingPlaylist">Add to existing playlist</label>
             <select class="form-control" id="ExistingPlaylist" @bind="SelectedExistingPlaylistId">
                 @foreach (var playlist in Playlists)
-                {
+                {   
                     <option value="@playlist.PlaylistId">@playlist.Name</option>
                 }
             </select>

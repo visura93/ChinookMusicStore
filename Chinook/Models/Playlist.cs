@@ -12,7 +12,7 @@ namespace Chinook.Models
 
         public long PlaylistId { get; set; }
         public string? Name { get; set; }
-
+        public string CurrentUserId { get; set; }
         public virtual ICollection<Track> Tracks { get; set; }
         public virtual ICollection<UserPlaylist> UserPlaylists { get; set; }
 

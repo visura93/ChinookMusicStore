@@ -3,6 +3,7 @@ using System;
 using Chinook;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Chinook.Migrations
 {
     [DbContext(typeof(ChinookContext))]
-    partial class ChinookContextModelSnapshot : ModelSnapshot
+    [Migration("20230815122250_setcurrentuseridparameter")]
+    partial class setcurrentuseridparameter
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.8");
@@ -357,10 +360,6 @@ namespace Chinook.Migrations
 
                     b.Property<string>("Composer")
                         .HasColumnType("NVARCHAR(220)");
-
-                    b.Property<string>("CurrentUserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<long?>("GenreId")
                         .HasColumnType("INTEGER");

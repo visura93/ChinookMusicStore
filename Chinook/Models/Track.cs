@@ -11,6 +11,7 @@ namespace Chinook.Models
             Playlists = new HashSet<Playlist>();
         }
         public bool IsFavorite { get; set; }
+        public string CurrentUserId { get; set; }
         public long TrackId { get; set; }
         public string Name { get; set; } = null!;
         public long? AlbumId { get; set; }

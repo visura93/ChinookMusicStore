@@ -55,7 +55,7 @@ namespace Chinook.Data
         }
        
 
-        public async Task SetTrackAsUnfavorite(long trackId)
+        public async Task SetTrackAsUnfavorite(long trackId,string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
 
@@ -67,7 +67,7 @@ namespace Chinook.Data
                 await dbContext.SaveChangesAsync();
             }
         }
-        public async Task SetTrackAsFavorite(long trackId)
+        public async Task SetTrackAsFavorite(long trackId, string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
 
@@ -76,16 +76,17 @@ namespace Chinook.Data
             if (track != null)
             {
                 track.IsFavorite = true;
+                track.CurrentUserId = CurrentUserId;
                 await dbContext.SaveChangesAsync();
             }
         }
-        public async Task<List<PlaylistTrack>> GetTracksWithFavorite()
+        public async Task<List<PlaylistTrack>> GetTracksWithFavorite(string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
             List<PlaylistTrack> playlistTracks = new List<PlaylistTrack>();
 
             var tracks = await dbContext.Tracks
-                .Where(t => t.IsFavorite == true)
+                .Where(t => t.IsFavorite == true && t.CurrentUserId == CurrentUserId)
                 .ToListAsync();
 
             foreach (var track in tracks)
@@ -105,18 +106,17 @@ namespace Chinook.Data
             return playlistTracks;
         }
 
-        public async Task<List<Models.Playlist>> GetAllPlayLists()
+        public async Task<List<Models.Playlist>> GetAllPlayLists(string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
-            List<PlaylistTrack> playlistTracks = new List<PlaylistTrack>();
 
-            var tracks = await dbContext.Playlists
+            var playlists = await dbContext.Playlists
+                .Where(p => p.CurrentUserId == CurrentUserId)  // Filter playlists by CurrentUserId
                 .ToListAsync();
 
-            return tracks;
+            return playlists;
         }
-
-        public async Task<List<PlaylistTrack>> GetTracksWithPlayListId(long playListId)
+        public async Task<List<PlaylistTrack>> GetTracksWithPlayListId(long playListId, string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
             List<PlaylistTrack> playlistTracks = new List<PlaylistTrack>();
@@ -145,7 +145,7 @@ namespace Chinook.Data
 
 
 
-        public async Task AddTrackToPlaylist(long trackId, long selectedPlaylistId)
+        public async Task AddTrackToPlaylist(long trackId, long selectedPlaylistId,string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
 
@@ -181,13 +181,14 @@ namespace Chinook.Data
             }
         }
 
-        public async Task<long> AddNewPlaylist(string newPlaylistName)
+        public async Task<long> AddNewPlaylist(string newPlaylistName,string CurrentUserId)
         {
             using var dbContext = await _dbFactory.CreateDbContextAsync();
 
             var playlist = new Models.Playlist
             {
-                Name = newPlaylistName
+                Name = newPlaylistName,
+                CurrentUserId= CurrentUserId
             };
 
             dbContext.Playlists.Add(playlist);
@@ -196,6 +197,18 @@ namespace Chinook.Data
             return playlist.PlaylistId; 
         }
 
+        public async Task DeletePlaylist(long playlistId)
+        {
+            using var dbContext = await _dbFactory.CreateDbContextAsync();
+
+            var playlistToRemove = await dbContext.Playlists.FindAsync(playlistId);
+
+            if (playlistToRemove != null)
+            {
+                dbContext.Playlists.Remove(playlistToRemove);
+                await dbContext.SaveChangesAsync();
+            }
+        }
 
 
 
