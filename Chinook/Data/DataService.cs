@@ -43,9 +43,9 @@ namespace Chinook.Data
                 {
                     TrackId = track.TrackId,
                     TrackName = track.Name,
-                    AlbumTitle = track.Album?.Title, // Make sure Album has a Title property
-                    ArtistName = track.Album?.Artist?.Name, // Make sure Artist is accessible via Album
-                    IsFavorite = track.IsFavorite, // Implement your favorite logic
+                    AlbumTitle = track.Album?.Title, 
+                    ArtistName = track.Album?.Artist?.Name, 
+                    IsFavorite = track.IsFavorite, 
                 };
 
                 playlistTracks.Add(playlistTrack);
@@ -94,9 +94,9 @@ namespace Chinook.Data
                 {
                     TrackId = track.TrackId,
                     TrackName = track.Name,
-                    AlbumTitle = track.Album?.Title, // Make sure Album has a Title property
-                    ArtistName = track.Album?.Artist?.Name, // Make sure Artist is accessible via Album
-                    IsFavorite = track.IsFavorite, // Implement your favorite logic
+                    AlbumTitle = track.Album?.Title, 
+                    ArtistName = track.Album?.Artist?.Name, 
+                    IsFavorite = track.IsFavorite, 
                 };
 
                 playlistTracks.Add(playlistTrack);
@@ -113,20 +113,6 @@ namespace Chinook.Data
             var tracks = await dbContext.Playlists
                 .ToListAsync();
 
-            //foreach (var track in tracks)
-            //{
-            //    PlaylistTrack playlistTrack = new PlaylistTrack
-            //    {
-            //        TrackId = track.TrackId,
-            //        TrackName = track.Name,
-            //        AlbumTitle = track.Album?.Title, // Make sure Album has a Title property
-            //        ArtistName = track.Album?.Artist?.Name, // Make sure Artist is accessible via Album
-            //        IsFavorite = track.IsFavorite, // Implement your favorite logic
-            //    };
-
-            //    playlistTracks.Add(playlistTrack);
-            //}
-
             return tracks;
         }
 
@@ -135,7 +121,7 @@ namespace Chinook.Data
             using var dbContext = await _dbFactory.CreateDbContextAsync();
             List<PlaylistTrack> playlistTracks = new List<PlaylistTrack>();
 
-            var tracksList = await dbContext.Tracks.ToListAsync(); // Fetch all tracks
+            var tracksList = await dbContext.Tracks.ToListAsync(); 
 
             var tracks = tracksList
                 .Where(t => t.PlaylistIds != null && t.PlaylistIds.Split(',').Any(id => id == playListId.ToString()));
@@ -207,7 +193,7 @@ namespace Chinook.Data
             dbContext.Playlists.Add(playlist);
             await dbContext.SaveChangesAsync();
 
-            return playlist.PlaylistId; // Return the newly created PlaylistId
+            return playlist.PlaylistId; 
         }
 
 

@@ -71,8 +71,6 @@ else
     private bool refreshPage = false;
     [Parameter] public long ArtistId { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
-    //[Inject] private DataService DataService { get; set; }
-    //[Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
     private Modal PlaylistDialog { get; set; }
     [Parameter] public long TrackIdTemp { get; set; }
     private Artist Artist;
@@ -84,25 +82,7 @@ else
     private List<Models.Playlist> Playlists;
     private long SelectedExistingPlaylistId { get; set; }
     private string NewPlaylistName { get; set; }
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    await InvokeAsync(StateHasChanged);
-    //    CurrentUserId = await GetUserId();
-    //    var DbContext = await DbFactory.CreateDbContextAsync();
-
-    //    Artist = DbContext.Artists.SingleOrDefault(a => a.ArtistId == ArtistId);
-
-    //    Tracks = DbContext.Tracks.Where(a => a.Album.ArtistId == ArtistId)
-    //        .Include(a => a.Album)
-    //        .Select(t => new PlaylistTrack()
-    //            {
-    //                AlbumTitle = (t.Album == null ? "-" : t.Album.Title),
-    //                TrackId = t.TrackId,
-    //                TrackName = t.Name,
-    //                IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == CurrentUserId && up.Playlist.Name == "Favorites")).Any()
-    //            })
-    //        .ToList();
-    //}
+  
     protected override async Task OnInitializedAsync()
     {
         await InvokeAsync(StateHasChanged);
