@@ -3,6 +3,7 @@ using System;
 using Chinook;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Chinook.Migrations
 {
     [DbContext(typeof(ChinookContext))]
-    partial class ChinookContextModelSnapshot : ModelSnapshot
+    [Migration("20230813122536_AddIsFavoriteToTrack")]
+    partial class AddIsFavoriteToTrack
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.8");
@@ -324,21 +327,6 @@ namespace Chinook.Migrations
                     b.ToTable("Playlist", (string)null);
                 });
 
-            modelBuilder.Entity("Chinook.Models.PlaylistTrackInfo", b =>
-                {
-                    b.Property<long>("PlaylistId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("TrackId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("PlaylistId", "TrackId");
-
-                    b.HasIndex("TrackId");
-
-                    b.ToTable("PlaylistTracks");
-                });
-
             modelBuilder.Entity("Chinook.Models.Track", b =>
                 {
                     b.Property<long>("TrackId")
@@ -368,10 +356,6 @@ namespace Chinook.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("NVARCHAR(200)");
-
-                    b.Property<string>("PlaylistIds")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<byte[]>("UnitPrice")
                         .IsRequired()
@@ -605,25 +589,6 @@ namespace Chinook.Migrations
                     b.Navigation("Track");
                 });
 
-            modelBuilder.Entity("Chinook.Models.PlaylistTrackInfo", b =>
-                {
-                    b.HasOne("Chinook.Models.Playlist", "Playlist")
-                        .WithMany()
-                        .HasForeignKey("PlaylistId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Chinook.Models.Track", "Track")
-                        .WithMany("PlaylistTracks")
-                        .HasForeignKey("TrackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Playlist");
-
-                    b.Navigation("Track");
-                });
-
             modelBuilder.Entity("Chinook.Models.Track", b =>
                 {
                     b.HasOne("Chinook.Models.Album", "Album")
@@ -779,8 +744,6 @@ namespace Chinook.Migrations
             modelBuilder.Entity("Chinook.Models.Track", b =>
                 {
                     b.Navigation("InvoiceLines");
-
-                    b.Navigation("PlaylistTracks");
                 });
 #pragma warning restore 612, 618
         }

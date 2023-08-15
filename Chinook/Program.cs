@@ -16,7 +16,7 @@ builder.Services.AddDefaultIdentity<ChinookUser>(options => options.SignIn.Requi
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddScoped<IDataService, DataService>();
+builder.Services.AddScoped<DataService>();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ChinookUser>>();
 
 var app = builder.Build();

@@ -3,6 +3,7 @@ using System;
 using Chinook;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Chinook.Migrations
 {
     [DbContext(typeof(ChinookContext))]
-    partial class ChinookContextModelSnapshot : ModelSnapshot
+    [Migration("20230814231525_addedplaylisttrackinfo")]
+    partial class addedplaylisttrackinfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.8");
@@ -368,10 +371,6 @@ namespace Chinook.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("NVARCHAR(200)");
-
-                    b.Property<string>("PlaylistIds")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<byte[]>("UnitPrice")
                         .IsRequired()

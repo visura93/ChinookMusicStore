@@ -28,6 +28,8 @@ public partial class ChinookContext : IdentityDbContext<ChinookUser>
     public virtual DbSet<MediaType> MediaTypes { get; set; } = null!;
     public virtual DbSet<Playlist> Playlists { get; set; } = null!;
     public virtual DbSet<Track> Tracks { get; set; } = null!;
+    public DbSet<PlaylistTrackInfo> PlaylistTracks { get; set; }
+    // public virtual DbSet<ClientModels.Playlist> Playlist { get; set; } = null!;
     public virtual DbSet<UserPlaylist> UserPlaylists { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -105,7 +107,18 @@ public partial class ChinookContext : IdentityDbContext<ChinookUser>
                 .WithMany(p => p.Customers)
                 .HasForeignKey(d => d.SupportRepId);
         });
+        modelBuilder.Entity<PlaylistTrackInfo>()
+        .HasKey(pt => new { pt.PlaylistId, pt.TrackId });
 
+        //modelBuilder.Entity<PlaylistTrack>()
+        //    .HasOne(pt => pt.Playlist)
+        //    .WithMany(p => p.PlaylistTracks)
+        //    .HasForeignKey(pt => pt.PlaylistId);
+
+        modelBuilder.Entity<PlaylistTrackInfo>()
+            .HasOne(pt => pt.Track)
+            .WithMany(t => t.PlaylistTracks)
+            .HasForeignKey(pt => pt.TrackId);
         modelBuilder.Entity<Employee>(entity =>
         {
             entity.ToTable("Employee");
@@ -218,7 +231,7 @@ public partial class ChinookContext : IdentityDbContext<ChinookUser>
         {
             entity.ToTable("Playlist");
 
-            entity.Property(e => e.PlaylistId).ValueGeneratedNever();
+            entity.Property(e => e.PlaylistId);
 
             entity.Property(e => e.Name).HasColumnType("NVARCHAR(120)");
 
@@ -237,6 +250,28 @@ public partial class ChinookContext : IdentityDbContext<ChinookUser>
                         j.HasIndex(new[] { "TrackId" }, "IFK_PlaylistTrackTrackId");
                     });
         });
+        //modelBuilder.Entity<ClientModels.Playlist>(entity =>
+        //{
+        //    entity.ToTable("Playlist");
+
+        //    entity.Property(e => e.Id).ValueGeneratedNever();
+
+        //    entity.Property(e => e.Name).HasColumnType("NVARCHAR(120)");
+
+        //    //entity.HasMany(d => d.Tracks)
+        //    //    .UsingEntity<Dictionary<string, object>>(
+        //    //        "PlaylistTrack",
+        //    //        l => l.HasOne<Track>().WithMany().HasForeignKey("TrackId").OnDelete(DeleteBehavior.ClientSetNull),
+        //    //        r => r.HasOne<Playlist>().WithMany().HasForeignKey("Id").OnDelete(DeleteBehavior.ClientSetNull),
+        //    //        j =>
+        //    //        {
+        //    //            j.HasKey("Id", "TrackId");
+
+        //    //            j.ToTable("PlaylistTrack");
+
+        //    //            j.HasIndex(new[] { "TrackId" }, "IFK_PlaylistTrackTrackId");
+        //    //        });
+        //});
 
         modelBuilder.Entity<Track>(entity =>
         {

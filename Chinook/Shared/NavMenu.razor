@@ -1,4 +1,26 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@page "/navigation"
+
+@inject NavigationManager NavigationManager
+@inject DataService DataService
+@using Chinook.Data
+
+<style>
+    .custom-navbar {
+        width: 600px; 
+    }
+    .playlist-list {
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+    }
+
+    .playlist-item {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Chinook</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -15,23 +37,61 @@
             </NavLink>
         </div>
         <div class="nav-item px-3">
-@* 
-            <NavLink class="nav-link" href="playlist/playlistnumber">
-                <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>My favorite tracks
-            </NavLink>
-*@
-</div>
-
+            <div class="playlist-list px-3">
+                <a class="nav-link" @onclick="NavigateToFavorites">
+                    <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>Favorites
+                </a>
+                @if (Playlists != null)
+                {
+                    @foreach (var playlist in Playlists)
+                    {
+                        <a class="nav-link playlist-item" @onclick="@(() => NavigateToPlayList(playlist.PlaylistId))">
+                            <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>@playlist.Name
+                        </a>
+                    }
+                }
+            </div>
+        </div>
     </nav>
 </div>
 
 @code {
     private bool collapseNavMenu = true;
-
+    private List<Models.Playlist> Playlists;
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private async Task NavigateToFavorites()
+    {
+        NavigationManager.NavigateTo($"/playlist/{await GetFavoritePlaylistId()}");
+        await RefreshPlaylists();
+    }
+
+    private async Task NavigateToPlayList(long playListId)
+    {
+        await RefreshPlaylists();
+        NavigationManager.NavigateTo($"/playlist/{playListId}");
+    }
+
+    private async Task<long> GetFavoritePlaylistId()
+    {
+        // Implement the logic to fetch the correct PlaylistId
+        // For example: return await DataService.GetFavoritePlaylistId();
+        return 0; // Replace with the actual PlaylistId
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshPlaylists();
+    }
+
+    private async Task RefreshPlaylists()
+    {
+        Playlists = await DataService.GetAllPlayLists();
+        StateHasChanged(); // Trigger UI update
     }
 }

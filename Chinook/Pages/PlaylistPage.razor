@@ -1,12 +1,14 @@
 ﻿@page "/playlist/{PlaylistId:long}"
 @attribute [Authorize]
-
+@inject DataService DataService
+@using Chinook.ClientModels;
+@using Chinook.Data;
 @using Chinook.Models
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims;
 
-<h1>Playlist <strong>@Playlist.Name</strong></h1>
-
+@*<h1>Playlist <strong>@Playlist.Name</strong></h1>
+*@
 @if (!string.IsNullOrWhiteSpace(InfoMessage))
 {
     <div class="alert alert-info fade show">
@@ -19,12 +21,13 @@
     </div>
 }
 
-@if (Playlist == null)
+@if (Tracks == null)
 {
-     <Loading />
+    <Loading />
 }
 else
 {
+
     <table class="table table-striped table-hover table-sm">
         <thead>
             <tr>
@@ -33,14 +36,14 @@ else
         </tr>
         </thead>
         <tbody>
-            @foreach (var track in Playlist.Tracks)
+            @foreach (var track in Tracks)
             {
                 <tr>
                     <td>@track.ArtistName - @track.AlbumTitle - @track.TrackName</td>
                     <td>
                         <div class="d-flex">
-                            @if (Playlist.Name != "Favorite")
-                            {
+                            @*@if (Playlist.Name != "Favorite")
+                            {*@
                                 @if (track.IsFavorite)
                                 {
                                     <a href="#" class="m-1" title="Unark as favorite" @onclick="@(() => UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
@@ -50,8 +53,10 @@ else
                                     <a href="#" class="m-1" title="Mark as favorite" @onclick="@(() => FavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star"></i></a>
                                 }
 
-                            }
+                           @* }*@
+                            @if (PlaylistId != 0){
                             <a href="#" class="m-1" title="Remove from this playlist" @onclick="@(() => RemoveTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-trash"></i></a>
+                            }
                         </div>
                     </td>
                 </tr>
@@ -61,10 +66,12 @@ else
 }
 
 @code {
+    private bool refreshPage = false;
     [Parameter] public long PlaylistId { get; set; }
     [Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
-
+    private Artist Artist;
+    private List<PlaylistTrack> Tracks;
     private Chinook.ClientModels.Playlist Playlist;
     private string CurrentUserId;
     private string InfoMessage;
@@ -73,25 +80,39 @@ else
     {
         CurrentUserId = await GetUserId();
 
+        //
+        // Artist = await DataService.GetArtist(ArtistId);
+        if (PlaylistId == 0) { 
+            Tracks = await DataService.GetTracksWithFavorite(); }
+        else
+        {
+            Tracks = await DataService.GetTracksWithPlayListId(PlaylistId);
+        }
+        //  if (refreshPage)
         await InvokeAsync(StateHasChanged);
         var DbContext = await DbFactory.CreateDbContextAsync();
 
-        Playlist = DbContext.Playlists
-            .Include(a => a.Tracks).ThenInclude(a => a.Album).ThenInclude(a => a.Artist)
-            .Where(p => p.PlaylistId == PlaylistId)
-            .Select(p => new ClientModels.Playlist()
-                {
-                    Name = p.Name,
-                    Tracks = p.Tracks.Select(t => new ClientModels.PlaylistTrack()
-                    {
-                        AlbumTitle = t.Album.Title,
-                        ArtistName = t.Album.Artist.Name,
-                        TrackId = t.TrackId,
-                        TrackName = t.Name,
-                        IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == CurrentUserId && up.Playlist.Name == "Favorites")).Any()
-                    }).ToList()
-                })
-            .FirstOrDefault();
+        //Playlist = DbContext.Playlists
+        //    .Include(a => a.Tracks).ThenInclude(a => a.Album).ThenInclude(a => a.Artist)
+        //    .Where(p => p.PlaylistId == PlaylistId)
+        //    .Select(p => new ClientModels.Playlist()
+        //        {
+        //            Name = p.Name,
+        //            Tracks = p.Tracks.Select(t => new ClientModels.PlaylistTrack()
+        //            {
+        //                AlbumTitle = t.Album.Title,
+        //                ArtistName = t.Album.Artist.Name,
+        //                TrackId = t.TrackId,
+        //                TrackName = t.Name,
+        //                IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == CurrentUserId && up.Playlist.Name == "Favorites")).Any()
+        //            }).ToList()
+        //        })
+        //    .FirstOrDefault();
+        if (refreshPage)
+        {
+            refreshPage = false; // Reset the flag
+            StateHasChanged();
+        }
     }
 
     private async Task<string> GetUserId()
@@ -101,21 +122,32 @@ else
         return userId;
     }
 
-    private void FavoriteTrack(long trackId)
+    private async void FavoriteTrack(long trackId)
     {
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        var track =Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        await DataService.SetTrackAsFavorite(trackId);
         InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} added to playlist Favorites.";
+        refreshPage = true;
+        await OnInitializedAsync();
     }
 
-    private void UnfavoriteTrack(long trackId)
+    private async void UnfavoriteTrack(long trackId)
     {
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        await DataService.SetTrackAsUnfavorite(trackId);
         InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from playlist Favorites.";
+        refreshPage = true;
+        await OnInitializedAsync();
+       
     }
 
-    private void RemoveTrack(long trackId)
+    private async void RemoveTrack(long trackId)
     {
-        CloseInfoMessage();
+        var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        await DataService.RemoveTrackFromPlaylist(trackId, PlaylistId);
+        InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from the playlist.";
+        refreshPage = true;
+        await OnInitializedAsync();
 
     }
 

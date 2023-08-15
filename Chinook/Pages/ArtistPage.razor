@@ -1,10 +1,13 @@
 ﻿@page "/artist/{ArtistId:long}"
 @attribute [Authorize]
-
+@inject DataService DataService
+@using Chinook.Data;
 @using Chinook.Models
 @using Chinook.ClientModels
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims;
+@using Microsoft.AspNetCore.Components
+
 
 @if (!string.IsNullOrWhiteSpace(InfoMessage))
 {
@@ -42,14 +45,21 @@ else
                     <td>
                         @if (track.IsFavorite)
                         {
-                            <a href="#" class="m-1" title="Unmark as favorite" @onclick="@(() => UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-filled"></i></a>
+                            <a href="#" class="m-1" title="Unmark as favorite" @onclick="@(() => UnfavoriteTrack(track.TrackId))" @onclick:preventDefault>
+                                <i class="bi bi-star-fill text-warning"></i> <!-- Add the "text-warning" class for yellow color -->
+                            </a>
                         }
                         else
                         {
-                            <a href="#" class="m-1" title="Mark as favorite" @onclick="@(() => FavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star"></i></a>
+                            <a href="#" class="m-1" title="Mark as favorite" @onclick="@(() => FavoriteTrack(track.TrackId))" @onclick:preventDefault>
+                                <i class="bi bi-star"></i>
+                            </a>
                         }
-                        <a href="#" class="m-1" title="Add to playlist" @onclick="@(() => OpenPlaylistDialog(track.TrackId))" @onclick:preventDefault><i class="bi bi-file-earmark-plus"></i></a>
+                        <a href="#" class="m-1" title="Add to playlist" @onclick="@(() => OpenPlaylistDialog(track.TrackId))" @onclick:preventDefault>
+                            <i class="bi bi-file-earmark-plus"></i>
+                        </a>
                     </td>
+
                 </tr>
             }
             </tbody>
@@ -58,38 +68,55 @@ else
 }
 
 @code {
+    private bool refreshPage = false;
     [Parameter] public long ArtistId { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
-    [Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
+    //[Inject] private DataService DataService { get; set; }
+    //[Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
     private Modal PlaylistDialog { get; set; }
-
+    [Parameter] public long TrackIdTemp { get; set; }
     private Artist Artist;
     private List<PlaylistTrack> Tracks;
     private DbContext DbContext;
     private PlaylistTrack SelectedTrack;
     private string InfoMessage;
     private string CurrentUserId;
+    private List<Models.Playlist> Playlists;
+    private long SelectedExistingPlaylistId { get; set; }
+    private string NewPlaylistName { get; set; }
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    await InvokeAsync(StateHasChanged);
+    //    CurrentUserId = await GetUserId();
+    //    var DbContext = await DbFactory.CreateDbContextAsync();
 
+    //    Artist = DbContext.Artists.SingleOrDefault(a => a.ArtistId == ArtistId);
+
+    //    Tracks = DbContext.Tracks.Where(a => a.Album.ArtistId == ArtistId)
+    //        .Include(a => a.Album)
+    //        .Select(t => new PlaylistTrack()
+    //            {
+    //                AlbumTitle = (t.Album == null ? "-" : t.Album.Title),
+    //                TrackId = t.TrackId,
+    //                TrackName = t.Name,
+    //                IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == CurrentUserId && up.Playlist.Name == "Favorites")).Any()
+    //            })
+    //        .ToList();
+    //}
     protected override async Task OnInitializedAsync()
     {
         await InvokeAsync(StateHasChanged);
         CurrentUserId = await GetUserId();
-        var DbContext = await DbFactory.CreateDbContextAsync();
 
-        Artist = DbContext.Artists.SingleOrDefault(a => a.ArtistId == ArtistId);
-
-        Tracks = DbContext.Tracks.Where(a => a.Album.ArtistId == ArtistId)
-            .Include(a => a.Album)
-            .Select(t => new PlaylistTrack()
-                {
-                    AlbumTitle = (t.Album == null ? "-" : t.Album.Title),
-                    TrackId = t.TrackId,
-                    TrackName = t.Name,
-                    IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == CurrentUserId && up.Playlist.Name == "Favorites")).Any()
-                })
-            .ToList();
+        Artist = await DataService.GetArtist(ArtistId);
+        Tracks = await DataService.GetTracksForArtist(ArtistId, CurrentUserId);
+        if (refreshPage)
+        {
+            refreshPage = false; // Reset the flag
+            StateHasChanged();
+        }
+        GetAllPlayLists();
     }
-
     private async Task<string> GetUserId()
     {
         var user = (await authenticationState).User;
@@ -97,28 +124,49 @@ else
         return userId;
     }
 
-    private void FavoriteTrack(long trackId)
+    private async void FavoriteTrack(long trackId)
     {
         var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        await DataService.SetTrackAsFavorite(trackId);
         InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} added to playlist Favorites.";
+        refreshPage = true;
+        await OnInitializedAsync();
+
     }
 
-    private void UnfavoriteTrack(long trackId)
+    private async void UnfavoriteTrack(long trackId)
     {
         var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        await DataService.SetTrackAsUnfavorite(trackId);
         InfoMessage = $"Track {track.ArtistName} - {track.AlbumTitle} - {track.TrackName} removed from playlist Favorites.";
+        refreshPage = true;
+        await OnInitializedAsync();
     }
 
     private void OpenPlaylistDialog(long trackId)
     {
         CloseInfoMessage();
+        TrackIdTemp = trackId;
         SelectedTrack = Tracks.FirstOrDefault(t => t.TrackId == trackId);
         PlaylistDialog.Open();
     }
+    private async void GetAllPlayLists()
+    {
+        Playlists = await DataService.GetAllPlayLists();
+    }
 
-    private void AddTrackToPlaylist()
+    private async void AddTrackToPlaylist(long trackId, long selectedPlaylistId, string NewPlaylistName)
     {
         CloseInfoMessage();
+        if (NewPlaylistName == null)
+        {
+            await DataService.AddTrackToPlaylist(trackId, selectedPlaylistId);
+        }
+        else
+        {
+          var id=  await DataService.AddNewPlaylist(NewPlaylistName);
+            await DataService.AddTrackToPlaylist(trackId, id);
+        }
         InfoMessage = $"Track {Artist.Name} - {SelectedTrack.AlbumTitle} - {SelectedTrack.TrackName} added to playlist {{playlist name}}.";
         PlaylistDialog.Close();
     }
@@ -132,6 +180,7 @@ else
 }
 
 <Modal @ref="PlaylistDialog">
+
     <Title>
         Add to playlist
     </Title>
@@ -145,18 +194,22 @@ else
 
         <div class="form-group mb-2">
             <label for="ExistingPlaylist">Add to existing playlist</label>
-            <select class="form-control" id="ExistingPlaylist">
-                <option>Playlist 1</option>
-                <option>Playlist 2</option>
-                <option>Playlist 3</option>
+            <select class="form-control" id="ExistingPlaylist" @bind="SelectedExistingPlaylistId">
+                @foreach (var playlist in Playlists)
+                {
+                    <option value="@playlist.PlaylistId">@playlist.Name</option>
+                }
             </select>
+
         </div>
+
         <div class="form-group mb-2">
             <label for="NewPlaylist">Create new playlist</label>
-            <input type="text" id="NewPlaylist" class="form-control" placeholder="Name for the new playlist">
+            <input type="text" id="NewPlaylist" class="form-control" @bind="NewPlaylistName" placeholder="Name for the new playlist">
         </div>
     </Body>
     <Footer>
-        <button class="btn btn-success" @onclick="AddTrackToPlaylist">Save</button>
+        <button class="btn btn-success" @onclick="@(() => AddTrackToPlaylist(TrackIdTemp, SelectedExistingPlaylistId,NewPlaylistName))">Save</button>
+
     </Footer>
 </Modal>
