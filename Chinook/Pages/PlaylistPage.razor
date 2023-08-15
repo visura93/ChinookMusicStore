@@ -75,7 +75,10 @@ else
     private Chinook.ClientModels.Playlist Playlist;
     private string CurrentUserId;
     private string InfoMessage;
-
+    protected override async Task OnParametersSetAsync()
+    {
+        await InitializePlaylist();
+    }
     protected override async Task OnInitializedAsync()
     {
         CurrentUserId = await GetUserId();
@@ -113,6 +116,23 @@ else
             refreshPage = false; // Reset the flag
             StateHasChanged();
         }
+    }
+    private async Task InitializePlaylist()
+    {
+        CurrentUserId = await GetUserId();
+
+        if (PlaylistId == 0)
+        {
+            Tracks = await DataService.GetTracksWithFavorite();
+        }
+        else
+        {
+            Tracks = await DataService.GetTracksWithPlayListId(PlaylistId);
+        }
+
+        // Retrieve other playlist information here
+
+        StateHasChanged(); // Trigger UI update
     }
 
     private async Task<string> GetUserId()
